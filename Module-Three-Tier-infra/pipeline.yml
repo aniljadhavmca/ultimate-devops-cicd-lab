@@ -1,0 +1,90 @@
+pipeline {
+    agent any
+
+    environment {
+        TF_IN_AUTOMATION = "true"
+        AWS_DEFAULT_REGION = "us-east-1"
+    }
+
+    parameters {
+        choice(name: 'ENV', choices: ['dev','test','prod'], description: 'Select Environment')
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/aniljadhavmca/Module-Three-Tier-infra.git'
+            }
+        }
+
+        stage('Set Terraform Directory') {
+            steps {
+                script {
+                    env.TF_DIR = "ROOT/envs/${params.ENV}"   // ✅ FINAL FIX
+                    echo "Using Terraform Dir: ${env.TF_DIR}"
+                }
+            }
+        }
+
+        stage('Verify Files') {
+            steps {
+                sh '''
+                echo "Current Directory:"
+                pwd
+                echo "Terraform Files:"
+                find . -name "*.tf"
+                '''
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                sh "terraform -chdir=${TF_DIR} init"
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                sh "terraform -chdir=${TF_DIR} validate"
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                sh "terraform -chdir=${TF_DIR} plan -out=tfplan"
+            }
+        }
+
+        stage('Show Plan') {
+            steps {
+                sh "terraform -chdir=${TF_DIR} show tfplan"
+            }
+        }
+
+        stage('Approval') {
+            when {
+                expression { params.ENV == 'prod' }
+            }
+            steps {
+                input message: "Approve Apply for ${params.ENV}?"
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                sh "terraform -chdir=${TF_DIR} apply -auto-approve tfplan"
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ ${params.ENV} deployment successful"
+        }
+        failure {
+            echo "❌ ${params.ENV} deployment failed"
+        }
+    }
+}
