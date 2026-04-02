@@ -1,0 +1,20 @@
+🚀 CI/CD Terraform Pipeline Nuggets
+
+Using Jenkins with dynamic env (ROOT/envs/dev)
+Terraform runs where main.tf exists ✅
+IAM Role attached to Jenkins EC2 (no access keys 🔐)
+Approval stage skipped for dev (by design)
+
+⚠️ Issues Faced & Fixes
+
+❌ Wrong path → fixed to ROOT/envs/dev
+❌ No .tf files → corrected execution directory
+❌ EC2 KeyPair error → created & updated valid key
+❌ Saved plan is stale → removed old plan usage
+
+💡 Key Learnings
+
+Terraform is path-sensitive
+Plan becomes invalid if state changes
+Avoid -target in CI/CD
+Use variables instead of hardcoding
